@@ -2,7 +2,6 @@ import { userModel } from "../model/userSchema.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { send_verification_email } from "../services/nodemailer_service.js";
-import { otp_verification_model } from "../model/otpVerifySchema.js";
 
 export const signupController = async (req, res) => {
   try {
@@ -47,14 +46,6 @@ export const signupController = async (req, res) => {
 
     // 7. Generate OTP (6-digit, fixed length)
     const generate_code = Math.floor(100000 + Math.random() * 900000);
-
-
-    // otp saving in db new colection otp-codes"
-  await otp_verification_model.create({
-      user_id: saveData._id,
-      otpCode: generate_code, //this user_id and otp_code is a key where in collection of otp-codes these two values saved ,its not a postman key :
-    });
-
 
     // 8. Send OTP email
     try {
