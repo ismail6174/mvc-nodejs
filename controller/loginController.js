@@ -1,58 +1,55 @@
 import { userModel } from "../model/userSchema.js";
-
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-
-
-export const loginController = async(req,res)=>{
-      try {
+export const loginController = async (req, res) => {
+  try {
     const { email, password } = req.body;
 
+    // 1. Validate fields
     if (!email || !password) {
-      res.status(400).json({
+      return res.status(400).json({
+        success: false,
         message: "Required fields are missing",
-        status: false,
       });
-      return;
     }
 
+    // 2. Find user
     const getData = await userModel.findOne({ email });
-
-    console.log(getData);
-
     if (!getData) {
-      res.json({
-        message: "invalid credentials",
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
       });
-      return;
     }
 
+    // 3. Compare password
     const comparePassword = await bcrypt.compare(password, getData.password);
-
-    console.log(comparePassword);
-
     if (!comparePassword) {
-      res.json({
-        message: "invalid credentials",
+      return res.status(403).json({
+        success: false,
+        message: "Invalid credentials",
       });
-      return;
     }
 
-// token:
+    // 4. Generate JWT
+    const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY, {
+      expiresIn: "1h",
+    });
 
-        var token = jwt.sign({ email }, process.env.JWT_SECRET_KEY);
-
-
-
-    res.json({
-      message: "login successfully",
+    // 5. Success response
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
       token,
+   
     });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json({
+      success: false,
       message: "Internal server error",
-      error,
+      error: error.message,
     });
   }
-}
+};

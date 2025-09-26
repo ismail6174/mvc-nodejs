@@ -11,8 +11,8 @@ export const signupController = async (req, res) => {
     // 1. Validate fields
     if (!username || !email || !password) {
       return res.status(400).json({
+        success: false,
         message: "Required fields are missing",
-        status: false,
       });
     }
 
@@ -20,15 +20,15 @@ export const signupController = async (req, res) => {
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
+        success: false,
         message: "User already exists with this email",
-        status: false,
       });
     }
 
     // 3. Hash password
     const encryptPassword = await bcrypt.hash(password, 10);
 
-    // 4. Create user object (no OTP saved in DB for now)
+    // 4. Create user object
     const userObj = {
       username,
       email,
@@ -38,23 +38,21 @@ export const signupController = async (req, res) => {
     // 5. Save user in DB
     const saveData = await userModel.create(userObj);
 
-    // 6. Generate JWT with expiry
+    // 6. Generate JWT
     const token = jwt.sign(
       { username, email },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "1h" } // token valid for 1 hour
+      { expiresIn: "1h" }
     );
 
-    // 7. Generate OTP (6-digit, fixed length)
+    // 7. Generate OTP
     const generate_code = Math.floor(100000 + Math.random() * 900000);
 
-
-    // otp saving in db new colection otp-codes"
-  await otp_verification_model.create({
+    // Save OTP in DB
+    await otp_verification_model.create({
       user_id: saveData._id,
-      otpCode: generate_code, //this user_id and otp_code is a key where in collection of otp-codes these two values saved ,its not a postman key :
+      otpCode: generate_code,
     });
-
 
     // 8. Send OTP email
     try {
@@ -62,13 +60,14 @@ export const signupController = async (req, res) => {
     } catch (err) {
       console.error("Email sending failed:", err);
       return res.status(500).json({
+        success: false,
         message: "User created but failed to send verification email",
-        status: false,
       });
     }
 
-    // 9. Success response (don’t send OTP in response)
+    // 9. Success response
     res.status(201).json({
+      success: true,
       message: "User created successfully. Verification email sent.",
       userId: saveData._id,
       token,
@@ -77,6 +76,7 @@ export const signupController = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({
+      success: false,
       message: "Internal server error",
       error: error.message,
     });
