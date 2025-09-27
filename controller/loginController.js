@@ -1,3 +1,4 @@
+
 import { userModel } from "../model/userSchema.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -32,17 +33,23 @@ export const loginController = async (req, res) => {
       });
     }
 
-    // 4. Generate JWT
-    const token = jwt.sign({ email }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1h",
-    });
+    // 4. Generate JWT with user ID
+    const token = jwt.sign(
+      { id: getData._id }, // ✅ store user id in payload
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "1h" }
+    );
 
     // 5. Success response
     res.status(200).json({
       success: true,
       message: "Login successful",
       token,
-   
+      user: {
+        id: getData._id,
+        name: getData.username, 
+        email: getData.email,
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -53,3 +60,4 @@ export const loginController = async (req, res) => {
     });
   }
 };
+
